@@ -2,7 +2,7 @@
 import os, os.path, sys
 from codecs import open as codecsopen
 from xml.sax.saxutils import escape
-from Parser import getParser, DTDParser, PropertiesParser
+from parser import getParser, DTDParser, PropertiesParser
 
 
 def _red(string):
@@ -49,15 +49,15 @@ def check(root_dir):
 			path = os.path.join(root_dir, locale, string_file)
 			if os.path.exists(path):
 				parser.readFile(path)
-				locale_entities = {e.get_key(): e for e in parser}
+				locale_entities = {e.key: e for e in parser}
 			else:
 				locale_entities = {}
 			output = codecsopen(path, 'w', 'utf-8')
 
 			for entity in entities:
-				key = entity.get_key()
-				val = entity.get_val()
-				locale_val = locale_entities[key].get_val() if key in locale_entities else None
+				key = entity.key
+				val = entity.val
+				locale_val = locale_entities[key].val if key in locale_entities else None
 
 				if locale_val is None:
 					added = added + 1
@@ -69,14 +69,14 @@ def check(root_dir):
 
 				if isinstance(parser, DTDParser):
 					output.write('%s%s<!ENTITY %s "%s">%s' % (
-						entity.get_pre_ws(), entity.get_pre_comment(), key,
+						entity.pre_ws, entity.pre_comment, key,
 						escape(val, entities={'"': '&quot;'}),
-						entity.get_post()
+						entity.post
 					))
 				elif isinstance(parser, PropertiesParser):
 					output.write('%s%s%s = %s\n%s' % (
-						entity.get_pre_ws(), entity.get_pre_comment(), key,
-						val, entity.get_post()
+						entity.pre_ws, entity.pre_comment, key,
+						val, entity.post
 					))
 
 			output.close()
