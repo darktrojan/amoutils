@@ -77,7 +77,7 @@ def package(basepath):
 		if included_files is None or path in included_files:
 			return True
 		for i in included_files:
-			if i.endswith('/*') and path.startswith(i[:-2]):
+			if i.endswith('/*') and (path == i[:-2] or path.startswith(i[:-1])):
 				return True
 		return False
 
