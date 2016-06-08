@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import certifi, os, sys, token, urllib3, xpifile
+import certifi, httplib, json, os, sys, token, urllib3, xpifile
 
 urllib3.disable_warnings()
 http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
@@ -45,25 +45,27 @@ def check_status(filepath):
 	# print path
 	# print headers
 
+	return http.request(method, path, headers=headers)
+
+
+def download(filepath):
+	response = check_status(filepath)
+	if response.status != httplib.OK:
+		print response.status
+		print response.data
+		exit(1)
+
+	method = 'GET'
+	path = json.loads(response.data)['files'][0]['download_url']
+	headers = {
+		'Authorization': 'JWT %s' % token.token()
+	}
+
 	response = http.request(method, path, headers=headers)
-
 	print response.status
-	# print response.getheaders()
-	print response.data
-
-
-# def download(path):
-# 	# guid, version = xpifile.get_guid_and_version(path)
-
-# 	method = 'GET'
-# 	path = 'https://addons.mozilla.org/api/v3/file/368260/open_with-6.3-sm+tb+fx.xpi?src=api'
-# 	headers = {
-# 		'Authorization': 'JWT %s' % token.token()
-# 	}
-
-# 	response = http.request(method, path, headers=headers)
-# 	print response.status
-# 	print response.getheaders()
+	print response.getheaders()
+	with open(os.path.basename(path).replace('?src=api', ''), 'wb') as f:
+		f.write(response.data)
 
 
 if __name__ == '__main__':
@@ -77,9 +79,11 @@ if __name__ == '__main__':
 	if sys.argv[1] == 'upload':
 		upload(path)
 	elif sys.argv[1] == 'check':
-		check_status(path)
-	# elif sys.argv[1] == 'download':
-	# 	download(path)
+		response = check_status(path)
+		print response.status
+		print response.data
+	elif sys.argv[1] == 'download':
+		download(path)
 	else:
 		print 'Argument 1 not understood'
 		exit(1)

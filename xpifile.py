@@ -53,6 +53,7 @@ def package(basepath):
 		'*.list',
 		'*.xpi',
 		'*.zip',
+		'.eslintrc',
 		'.git',
 		'.gitignore',
 		'.hg',
@@ -92,7 +93,7 @@ def package(basepath):
 				print _yellow('%s skipped' % r)
 				continue
 			if is_included(r):
-				print r
+				# print r
 				zipped_files.append(r)
 				z.write(f, r)
 				if os.path.isdir(f):
