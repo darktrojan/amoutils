@@ -84,11 +84,11 @@ def package(basepath):
 
 	def package_directory(path):
 		for p in sorted(os.listdir(path)):
-			if is_excluded(p):
-				print _yellow('%s skipped' % p)
-				continue
 			f = os.path.join(path, p)
 			r = os.path.relpath(f, basepath)
+			if is_excluded(p):
+				print _yellow('%s skipped' % r)
+				continue
 			if is_excluded(r):
 				print _yellow('%s skipped' % r)
 				continue
@@ -99,7 +99,7 @@ def package(basepath):
 				if os.path.isdir(f):
 					package_directory(f)
 			else:
-				print _red('%s not included' % p)
+				print _red('%s not included' % r)
 
 	if os.path.exists(os.path.join(basepath, '.xpiignore')):
 		with open(os.path.join(basepath, '.xpiignore'), 'r') as f:
