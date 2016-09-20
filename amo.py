@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import certifi, httplib, json, os, sys, token, urllib3, xpifile
 
-urllib3.disable_warnings()
 http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
 
 
@@ -68,6 +67,18 @@ def download(filepath):
 		f.write(response.data)
 
 
+def relnotes(filepath):
+	(guid, version,) = xpifile.get_guid_and_version(filepath)
+	stub = xpifile.get_amo_stub(guid)
+
+	path = 'https://addons.mozilla.org/api/v3/addons/addon/%s/versions/' % stub
+	response = http.request('GET', path)
+	for result in json.loads(response.data)['results']:
+		if result['version'] == version:
+			print result['edit_url']
+			return
+
+
 if __name__ == '__main__':
 	path = os.getcwd()
 	if len(sys.argv) < 2:
@@ -84,6 +95,8 @@ if __name__ == '__main__':
 		print response.data
 	elif sys.argv[1] == 'download':
 		download(path)
+	elif sys.argv[1] == 'relnotes':
+		relnotes(path)
 	else:
 		print 'Argument 1 not understood'
 		exit(1)
