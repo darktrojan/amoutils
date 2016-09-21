@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import certifi, httplib, json, os, sys, token, urllib3, xpifile
+import argparse, certifi, httplib, json, os, token, urllib3, xpifile
 
 http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
 
@@ -41,9 +41,6 @@ def check_status(filepath):
 		'Authorization': 'JWT %s' % token.token()
 	}
 
-	# print path
-	# print headers
-
 	return http.request(method, path, headers=headers)
 
 
@@ -80,23 +77,23 @@ def relnotes(filepath):
 
 
 if __name__ == '__main__':
-	path = os.getcwd()
-	if len(sys.argv) < 2:
-		print 'Not enough arguments'
-		exit(1)
-	elif len(sys.argv) == 3:
-		path = os.path.join(path, sys.argv[2])
+	parser = argparse.ArgumentParser()
+	parser.add_argument('action', choices=('upload', 'check', 'download', 'relnotes',))
+	parser.add_argument('path', nargs='?')
+	args = parser.parse_args()
 
-	if sys.argv[1] == 'upload':
+	if args.path is None:
+		path = os.getcwd()
+	else:
+		args.path = os.path.join(path, args.path)
+
+	if args.action == 'upload':
 		upload(path)
-	elif sys.argv[1] == 'check':
+	elif args.action == 'check':
 		response = check_status(path)
 		print response.status
 		print response.data
-	elif sys.argv[1] == 'download':
+	elif args.action == 'download':
 		download(path)
-	elif sys.argv[1] == 'relnotes':
+	elif args.action == 'relnotes':
 		relnotes(path)
-	else:
-		print 'Argument 1 not understood'
-		exit(1)
