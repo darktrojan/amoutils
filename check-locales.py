@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os, os.path, sys
+import os, os.path, re
 from codecs import open as codecsopen
 from xml.sax.saxutils import escape
 from parser import getParser, DTDParser, PropertiesParser
@@ -29,9 +29,11 @@ def _cyan(string):
 	return '\033[96m%s\033[m' % string
 
 
-def check(root_dir):
-	base_locale = os.path.join(root_dir, 'en-US')
-	locales = [f for f in os.listdir(root_dir) if f != 'en-US']
+if __name__ == '__main__':
+	root_dir = os.getcwd()
+	locale_dir = os.path.join(root_dir, 'locale')
+	base_locale = os.path.join(locale_dir, 'en-US')
+	locales = [f for f in os.listdir(locale_dir) if f != 'en-US']
 	locales.sort()
 	files = [f for f in os.listdir(base_locale)]
 	files.sort()
@@ -46,7 +48,7 @@ def check(root_dir):
 			added = 0
 			same = 0
 			translated = 0
-			path = os.path.join(root_dir, locale, string_file)
+			path = os.path.join(locale_dir, locale, string_file)
 			if os.path.exists(path):
 				parser.readFile(path)
 				locale_entities = {e.key: e for e in parser}
@@ -82,9 +84,15 @@ def check(root_dir):
 			output.close()
 			print _green('%s: %d new, %d same, %d translated' % (locale, added, same, translated))
 
-if __name__ == '__main__':
-	root_dir = os.getcwd()
-	if len(sys.argv) == 2:
-		root_dir = os.path.join(root_dir, sys.argv[1])
+	with open(os.path.join(root_dir, 'chrome.manifest'), 'r') as manifest:
+		manifest_locales = []
+		for line in manifest:
+			if line[0:6] == 'locale':
+				manifest_locales.append(re.split(r'\s+', line)[2])
 
-	check(root_dir)
+		for l in locales:
+			if l not in manifest_locales:
+				print _red('%s directory exists, but is not in chrome.manifest' % l)
+		for m in manifest_locales:
+			if m != 'en-US' and m not in locales:
+				print _red('%s is in chrome.manifest, but no directory exists' % m)

@@ -82,10 +82,9 @@ if __name__ == '__main__':
 	parser.add_argument('path', nargs='?')
 	args = parser.parse_args()
 
-	if args.path is None:
-		path = os.getcwd()
-	else:
-		args.path = os.path.join(path, args.path)
+	path = os.getcwd()
+	if args.path is not None:
+		path = os.path.join(path, args.path)
 
 	if args.action == 'upload':
 		upload(path)
