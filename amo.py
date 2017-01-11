@@ -1,7 +1,24 @@
 #!/usr/bin/python
-import argparse, certifi, httplib, json, os, token, urllib3, xpifile
+import argparse, certifi, httplib, json, jwt, os, random, time, urllib3, xpifile
 
 http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
+
+
+def _token():
+	with open(os.path.join(os.path.dirname(__file__), '.amorc'), 'r') as f:
+		j = json.load(f)
+		user = j['user']
+		secret = j['secret']
+
+	issuedAt = int(time.time())
+	payload = {
+		'iss': user,
+		'jti': random.random(),
+		'iat': issuedAt,
+		'exp': issuedAt + 60,
+	}
+
+	return jwt.encode(payload, secret, algorithm='HS256')
 
 
 def upload(filepath):
@@ -14,7 +31,7 @@ def upload(filepath):
 	method = 'PUT'
 	path = 'https://addons.mozilla.org/api/v3/addons/%s/versions/%s/' % (guid, version)
 	headers = {
-		'Authorization': 'JWT %s' % token.token()
+		'Authorization': 'JWT %s' % _token()
 	}
 	fields = {
 		'upload': (os.path.basename(filepath), open(filepath, 'rb').read())
@@ -38,7 +55,7 @@ def check_status(filepath):
 	method = 'GET'
 	path = 'https://addons.mozilla.org/api/v3/addons/%s/versions/%s/' % (guid, version)
 	headers = {
-		'Authorization': 'JWT %s' % token.token()
+		'Authorization': 'JWT %s' % _token()
 	}
 
 	return http.request(method, path, headers=headers)
@@ -54,7 +71,7 @@ def download(filepath):
 	method = 'GET'
 	path = json.loads(response.data)['files'][0]['download_url']
 	headers = {
-		'Authorization': 'JWT %s' % token.token()
+		'Authorization': 'JWT %s' % _token()
 	}
 
 	response = http.request(method, path, headers=headers)
@@ -68,12 +85,14 @@ def relnotes(filepath):
 	(guid, version,) = xpifile.get_guid_and_version(filepath)
 	stub = xpifile.get_amo_stub(guid)
 
-	path = 'https://addons.mozilla.org/api/v3/addons/addon/%s/versions/' % stub
-	response = http.request('GET', path)
-	for result in json.loads(response.data)['results']:
-		if result['version'] == version:
-			print result['edit_url']
-			return
+	# path = 'https://addons.mozilla.org/api/v3/addons/addon/%s/versions/' % stub
+	# response = http.request('GET', path)
+	# for result in json.loads(response.data)['results']:
+	# 	if result['version'] == version:
+	# 		print result['edit_url']
+	# 		return
+
+	print 'https://addons.mozilla.org/en-US/developers/addon/%s/versions' % stub
 
 
 if __name__ == '__main__':
