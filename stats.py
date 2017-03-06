@@ -9,7 +9,7 @@ total_users = 0
 with open(os.path.join(os.path.dirname(__file__), '.amorc'), 'r') as f:
 	j = json.load(f)
 
-for slug in sorted(j['repos'].values()):
+for slug in sorted(j['slugs'].values()):
 	u = urlopen('https://services.addons.mozilla.org/en-US/firefox/api/1.5/addon/%s' % slug)
 	d = parse(u)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import argparse, certifi, httplib, json, jwt, os, random, time, urllib3, xpifile
+import argparse, certifi, httplib, json, jwt, os, random, subprocess, time, urllib3, xpifile
 
 http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
 
@@ -93,6 +93,19 @@ def relnotes(filepath):
 	# 		return
 
 	print 'https://addons.mozilla.org/en-US/developers/addon/%s/versions' % stub
+
+	with open(os.path.join(os.path.dirname(__file__), '.amorc'), 'r') as f:
+		j = json.load(f)
+		repo = j['repos'].get(guid, None)
+
+	if repo is None:
+		return
+
+	output = subprocess.check_output(['git', 'tag', '--sort', '-authordate']).splitlines()
+	new_tag = output[0]
+	old_tag = output[1]
+
+	print 'https://github.com/darktrojan/%s/compare/%s...%s' % (repo, old_tag, new_tag)
 
 
 if __name__ == '__main__':

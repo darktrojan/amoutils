@@ -47,7 +47,7 @@ def get_guid_and_version(path):
 def get_amo_stub(guid):
 	with open(os.path.join(os.path.dirname(__file__), '.amorc'), 'r') as f:
 		j = json.load(f)
-	return j['repos'][guid]
+	return j['slugs'][guid]
 
 
 def get_xpi_filename(path):
