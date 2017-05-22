@@ -28,20 +28,35 @@ def _cyan(string):
 
 
 def get_guid_and_version(path):
+	def parse_xml(x):
+		guid = str(x.getElementsByTagName('em:id')[0].firstChild.data.strip())
+		version = str(x.getElementsByTagName('em:version')[0].firstChild.data.strip())
+		return guid, version
+
+	def parse_json(j):
+		o = json.loads(j)
+		guid = str(o['applications']['gecko']['id'])
+		version = str(o['version'])
+		return guid, version
+
 	if path.endswith('.xpi'):
 		with zipfile.ZipFile(path, 'r') as z:
-			i = z.read('install.rdf')
-			x = parseString(i)
-	elif not os.path.exists(os.path.join(path, 'install.rdf')):
-		raise Exception('omg wtf')
-	else:
+			if 'install.rdf' in z.namelist():
+				i = z.read('install.rdf')
+				x = parseString(i)
+				return parse_xml(x)
+			j = z.read('manifest.json')
+			return parse_json(j)
+	elif os.path.exists(os.path.join(path, 'install.rdf')):
 		with open(os.path.join(path, 'install.rdf'), 'r') as f:
 			x = parse(f)
-
-	guid = str(x.getElementsByTagName('em:id')[0].firstChild.data.strip())
-	version = str(x.getElementsByTagName('em:version')[0].firstChild.data.strip())
-
-	return guid, version
+			return parse_xml(x)
+	elif os.path.exists(os.path.join(path, 'manifest.json')):
+		with open(os.path.join(path, 'manifest.json'), 'r') as f:
+			j = f.read()
+			return parse_json(j)
+	else:
+		raise Exception('omg wtf')
 
 
 def get_amo_stub(guid):
@@ -118,7 +133,7 @@ def package(basepath):
 			for l in f:
 				included_files.append(l.strip())
 
-	z = zipfile.ZipFile(os.path.join(basepath, get_xpi_filename(basepath)), 'w', zipfile.ZIP_DEFLATED)
+	z = zipfile.ZipFile(os.path.join(os.getcwd(), get_xpi_filename(basepath)), 'w', zipfile.ZIP_DEFLATED)
 	package_directory(basepath)
 	z.close()
 

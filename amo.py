@@ -101,9 +101,9 @@ def relnotes(filepath):
 	if repo is None:
 		return
 
-	output = subprocess.check_output(['git', 'tag', '--sort', '-authordate']).splitlines()
-	new_tag = output[0]
-	old_tag = output[1]
+	new_tag = subprocess.check_output(['git', 'describe', '--tags']).splitlines()[0]
+	old_tag = subprocess.check_output(['git', 'describe', '--tags', '--always', 'HEAD^']).splitlines()[0]
+	old_tag = old_tag.split('-')[0]
 
 	print 'https://github.com/darktrojan/%s/compare/%s...%s' % (repo, old_tag, new_tag)
 
