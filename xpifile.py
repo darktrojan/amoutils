@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import fnmatch, json, os, sys, zipfile
+import argparse, fnmatch, json, os, subprocess, zipfile
 from xml.dom.minidom import parse, parseString
 
 
@@ -69,7 +69,7 @@ def get_xpi_filename(path):
 	return '%s-%s.xpi' % get_guid_and_version(path)
 
 
-def package(basepath):
+def package(basepath, lint=True):
 	excluded_files = [
 		'*.list',
 		'*.xpi',
@@ -133,7 +133,8 @@ def package(basepath):
 			for l in f:
 				included_files.append(l.strip())
 
-	z = zipfile.ZipFile(os.path.join(os.getcwd(), get_xpi_filename(basepath)), 'w', zipfile.ZIP_DEFLATED)
+	zipfile_name = os.path.join(os.getcwd(), get_xpi_filename(basepath))
+	z = zipfile.ZipFile(zipfile_name, 'w', zipfile.ZIP_DEFLATED)
 	package_directory(basepath)
 	z.close()
 
@@ -142,10 +143,23 @@ def package(basepath):
 			if not i.endswith('/*') and i not in zipped_files:
 				print _red('%s missing' % i)
 
+	if not lint or subprocess.call(['addons-linter', zipfile_name]) == 0:
+		print ''
+		print _green('Created ' + os.path.relpath(zipfile_name, os.getcwd()))
+	else:
+		print ''
+		print _red('Failed linting')
+
 
 if __name__ == '__main__':
-	path = os.getcwd()
-	if len(sys.argv) > 1:
-		path = os.path.join(path, sys.argv[1])
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--lint', action='store_true')
+	parser.add_argument('path', nargs='?')
+	args = parser.parse_args()
 
-	package(path)
+	path = os.getcwd()
+	path = os.getcwd()
+	if args.path is not None:
+		path = os.path.join(path, args.path)
+
+	package(path, lint=args.lint)
