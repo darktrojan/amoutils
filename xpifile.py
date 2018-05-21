@@ -35,7 +35,16 @@ def get_guid_and_version(path):
 
 	def parse_json(j):
 		o = json.loads(j)
-		guid = str(o['applications']['gecko']['id'])
+		if 'applications' in o:
+			guid = str(o['applications']['gecko']['id'])
+		else:
+			path_parts = path.split('/')
+			if 'betterimageviewer' in path_parts:
+				guid = 'betterimageviewer@darktrojan.net'
+			if 'openwith' in path_parts:
+				guid = 'openwith@darktrojan.net'
+			if 'newtabtools' in path_parts:
+				guid = 'newtabtools@darktrojan.net'
 		version = str(o['version'])
 		return guid, version
 
@@ -65,11 +74,7 @@ def get_amo_stub(guid):
 	return j['slugs'][guid]
 
 
-def get_xpi_filename(path):
-	return '%s-%s.xpi' % get_guid_and_version(path)
-
-
-def package(basepath, lint=True):
+def package(basepath):
 	excluded_files = [
 		'*.list',
 		'*.xpi',
@@ -133,7 +138,31 @@ def package(basepath, lint=True):
 			for l in f:
 				included_files.append(l.strip())
 
-	zipfile_name = os.path.join(os.getcwd(), get_xpi_filename(basepath))
+	if os.path.isdir(os.path.join(basepath, '.git')):
+		branches = subprocess.check_output(['git', 'branch']).splitlines()
+		for b in branches:
+			if b[0] == '*':
+				branch = b[2:]
+
+		if args.chrome:
+			if branch != 'chrome':
+				print _red('WARNING: not on the chrome branch')
+				print
+			zipfile_name = '%s-%s_chrome.zip'
+		elif args.opera:
+			if branch != 'opera':
+				print _red('WARNING: not on the opera branch')
+				print
+			zipfile_name = '%s-%s_opera.zip'
+		else:
+			if branch != 'master':
+				print _red('WARNING: not on the master branch')
+				print
+			zipfile_name = '%s-%s.xpi'
+	else:
+		zipfile_name = '%s-%s.xpi'
+
+	zipfile_name = os.path.join(os.getcwd(), zipfile_name % get_guid_and_version(basepath))
 	z = zipfile.ZipFile(zipfile_name, 'w', zipfile.ZIP_DEFLATED)
 	package_directory(basepath)
 	z.close()
@@ -143,23 +172,28 @@ def package(basepath, lint=True):
 			if not i.endswith('/*') and i not in zipped_files:
 				print _red('%s missing' % i)
 
-	if not lint or subprocess.call(['addons-linter', zipfile_name]) == 0:
+	if not args.lint or subprocess.call(['addons-linter', zipfile_name]) == 0:
 		print ''
 		print _green('Created ' + os.path.relpath(zipfile_name, os.getcwd()))
 	else:
 		print ''
 		print _red('Failed linting')
 
+args = None
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--lint', action='store_true')
+	parser.add_argument('--chrome', action='store_true')
+	parser.add_argument('--opera', action='store_true')
 	parser.add_argument('path', nargs='?')
 	args = parser.parse_args()
 
 	path = os.getcwd()
-	path = os.getcwd()
-	if args.path is not None:
+	if args.path is None:
+		if not os.path.exists('install.rdf') and os.path.exists('webextension'):
+			path = os.path.join(path, 'webextension')
+	else:
 		path = os.path.join(path, args.path)
 
-	package(path, lint=args.lint)
+	package(path)

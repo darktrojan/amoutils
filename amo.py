@@ -115,7 +115,10 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	path = os.getcwd()
-	if args.path is not None:
+	if args.path is None:
+		if not os.path.exists('install.rdf') and os.path.exists('webextension'):
+			path = os.path.join(path, 'webextension')
+	else:
 		path = os.path.join(path, args.path)
 
 	if args.action == 'upload':
